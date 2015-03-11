@@ -10,8 +10,12 @@ import (
 	"strings"
 )
 
-type WebhookResponse struct {
+type webhookListResponse struct {
 	Webhooks []Webhook `json:"webhooks"`
+}
+
+type webhookResponse struct {
+	Webhook *Webhook `json:"webhook"`
 }
 
 type Webhook struct {
@@ -42,8 +46,32 @@ func (webhooks *Webhooks) create(topic string, address *url.URL, format string) 
 
 	body, _ := httputil.DumpResponse(resp, true)
 	log.Printf("RESPONSE: %s \n", body)
+}
 
-	webhooks.requester(req)
+func (webhooks *Webhooks) delete(id int) {
+	webhook, err := webhooks.get(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Deleting webhook [%d] %s %s %s", webhook.Id, webhook.Topic, webhook.Format, webhook.Address)
+
+	req, err := http.NewRequest("POST", webhooks.urlBuilder(fmt.Sprintf("/admin/webhooks/%d.json", id)), strings.NewReader("_method=delete"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resp, err := webhooks.requester(req)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if resp.StatusCode == 200 {
+		log.Println("Webhook deleted.")
+	} else {
+		log.Println(resp.Status)
+	}
 }
 
 func (webhooks *Webhooks) list() []Webhook {
@@ -59,8 +87,25 @@ func (webhooks *Webhooks) list() []Webhook {
 
 	decoder := json.NewDecoder(resp.Body)
 
-	var m *WebhookResponse
+	var m *webhookListResponse
 	decoder.Decode(&m)
 
 	return m.Webhooks
+}
+
+func (webhooks *Webhooks) get(id int) (*Webhook, error) {
+	req, err := http.NewRequest("GET", webhooks.urlBuilder(fmt.Sprintf("/admin/webhooks/%d.json", id)), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	resp, err := webhooks.requester(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	decoder := json.NewDecoder(resp.Body)
+
+	var w *webhookResponse
+	decoder.Decode(&w)
+	fmt.Println(w)
+	return w.Webhook, nil
 }

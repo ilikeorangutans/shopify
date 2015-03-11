@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -30,12 +31,23 @@ func main() {
 	}
 	app.Commands = []cli.Command{
 		cli.Command{
-			Name: "webhooks",
+			Name:   "webhooks",
+			Action: WebhooksDefault,
 			Subcommands: []cli.Command{
 				cli.Command{
 					Name:   "list",
 					Usage:  "Lists registered webhooks",
 					Action: ListWebhooks,
+				},
+				cli.Command{
+					Name:   "delete",
+					Usage:  "Deletes a webhook",
+					Action: DeleteWebhook,
+					Flags: []cli.Flag{
+						cli.IntFlag{
+							Name: "id",
+						},
+					},
 				},
 				cli.Command{
 					Name:   "create",
@@ -67,6 +79,18 @@ func SetupClient(context *cli.Context) error {
 	return nil
 }
 
+func WebhooksDefault(context *cli.Context) {
+	if len(context.Args()) > 0 {
+		id, err := strconv.Atoi(context.Args()[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		webhook, _ := shopifyClient.Webhooks().get(id)
+
+		fmt.Println("Got webhook", webhook)
+	}
+}
+
 func CreateWebhook(context *cli.Context) {
 	u, err := url.Parse(context.String("address"))
 	if err != nil {
@@ -94,4 +118,9 @@ func ListWebhooks(context *cli.Context) {
 	for _, webhook := range hooks {
 		fmt.Printf(format, webhook.Id, webhook.Topic, webhook.Format, webhook.Address)
 	}
+}
+
+func DeleteWebhook(context *cli.Context) {
+	webhooks := shopifyClient.Webhooks()
+	webhooks.delete(context.Int("id"))
 }
