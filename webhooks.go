@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 )
 
 type webhookListResponse struct {
-	Webhooks []Webhook `json:"webhooks"`
+	Webhooks []*Webhook `json:"webhooks"`
 }
 
 type webhookResponse struct {
@@ -30,7 +29,7 @@ type Webhooks struct {
 	urlBuilder URLBuilder
 }
 
-func (webhooks *Webhooks) create(topic string, address *url.URL, format string) {
+func (webhooks *Webhooks) create(topic string, address *url.URL, format string) (*Webhook, error) {
 
 	payload := fmt.Sprintf("{\"webhook\":{\"topic\":\"%s\", \"address\":\"%s\", \"format\": \"%s\"}}", topic, address.String(), format)
 	req, err := http.NewRequest("POST", webhooks.urlBuilder("/admin/webhooks.json"), strings.NewReader(payload))
@@ -44,8 +43,10 @@ func (webhooks *Webhooks) create(topic string, address *url.URL, format string) 
 		log.Fatal(err)
 	}
 
-	body, _ := httputil.DumpResponse(resp, true)
-	log.Printf("RESPONSE: %s \n", body)
+	var webhook *Webhook
+	json.Unmarshal(resp["webhook"], &webhook)
+
+	return webhook, nil
 }
 
 func (webhooks *Webhooks) delete(id int) {
@@ -61,36 +62,30 @@ func (webhooks *Webhooks) delete(id int) {
 		log.Fatal(err)
 	}
 
-	resp, err := webhooks.requester(req)
+	_, err = webhooks.requester(req)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if resp.StatusCode == 200 {
-		log.Println("Webhook deleted.")
-	} else {
-		log.Println(resp.Status)
-	}
+	log.Printf("Webhook %d deleted\n", id)
 }
 
-func (webhooks *Webhooks) list() []Webhook {
-	req, err := http.NewRequest("GET", webhooks.urlBuilder("/admin/webhooks.json"), nil)
+func (ws *Webhooks) list() []*Webhook {
+	req, err := http.NewRequest("GET", ws.urlBuilder("/admin/webhooks.json"), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err := webhooks.requester(req)
+	resp, err := ws.requester(req)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	decoder := json.NewDecoder(resp.Body)
+	var webhooks []*Webhook
+	json.Unmarshal(resp["webhooks"], &webhooks)
 
-	var m *webhookListResponse
-	decoder.Decode(&m)
-
-	return m.Webhooks
+	return webhooks
 }
 
 func (webhooks *Webhooks) get(id int) (*Webhook, error) {
@@ -102,10 +97,8 @@ func (webhooks *Webhooks) get(id int) (*Webhook, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var webhook *Webhook
+	json.Unmarshal(resp["webhook"], &webhook)
 
-	var w *webhookResponse
-	decoder.Decode(&w)
-	fmt.Println(w)
-	return w.Webhook, nil
+	return webhook, nil
 }
