@@ -1,3 +1,3 @@
-# shopiclient
+# shopify
 
-Shopify CLI API Client
+Go client library for various Shopify API endpoints.

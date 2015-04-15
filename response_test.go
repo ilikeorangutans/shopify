@@ -1,4 +1,4 @@
-package main
+package shopify
 
 import (
 	"encoding/json"

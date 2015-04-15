@@ -1,4 +1,4 @@
-package main
+package shopify
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ type Webhooks struct {
 	urlBuilder URLBuilder
 }
 
-func (webhooks *Webhooks) create(topic string, address *url.URL, format string) (*Webhook, error) {
+func (webhooks *Webhooks) Create(topic string, address *url.URL, format string) (*Webhook, error) {
 
 	payload := fmt.Sprintf("{\"webhook\":{\"topic\":\"%s\", \"address\":\"%s\", \"format\": \"%s\"}}", topic, address.String(), format)
 	req, err := http.NewRequest("POST", webhooks.urlBuilder("/admin/webhooks.json"), strings.NewReader(payload))
@@ -49,8 +49,8 @@ func (webhooks *Webhooks) create(topic string, address *url.URL, format string) 
 	return webhook, nil
 }
 
-func (webhooks *Webhooks) delete(id int) {
-	webhook, err := webhooks.get(id)
+func (webhooks *Webhooks) Delete(id int) {
+	webhook, err := webhooks.Get(id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func (webhooks *Webhooks) delete(id int) {
 	log.Printf("Webhook %d deleted\n", id)
 }
 
-func (ws *Webhooks) list() []*Webhook {
+func (ws *Webhooks) List() []*Webhook {
 	req, err := http.NewRequest("GET", ws.urlBuilder("/admin/webhooks.json"), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -88,7 +88,7 @@ func (ws *Webhooks) list() []*Webhook {
 	return webhooks
 }
 
-func (webhooks *Webhooks) get(id int) (*Webhook, error) {
+func (webhooks *Webhooks) Get(id int) (*Webhook, error) {
 	req, err := http.NewRequest("GET", webhooks.urlBuilder(fmt.Sprintf("/admin/webhooks/%d.json", id)), nil)
 	if err != nil {
 		log.Fatal(err)

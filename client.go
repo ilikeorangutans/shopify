@@ -1,4 +1,4 @@
-package main
+package shopify
 
 import (
 	"encoding/json"
@@ -17,13 +17,13 @@ type settings struct {
 	host, username, password string
 }
 
-type ShopifyClient struct {
+type Client struct {
 	settings settings
 	client   *http.Client
 	Verbose  bool
 }
 
-func Connect(host, username, password string) *ShopifyClient {
+func Connect(host, username, password string) *Client {
 	client := &http.Client{}
 
 	resp, err := client.Head(fmt.Sprintf("https://%s/admin/", host))
@@ -35,24 +35,24 @@ func Connect(host, username, password string) *ShopifyClient {
 		log.Fatalf("Server doesn't seem to be up: \"%s\"\n", resp.Status)
 	}
 
-	return &ShopifyClient{client: client, settings: settings{host: host, username: username, password: password}}
+	return &Client{client: client, settings: settings{host: host, username: username, password: password}}
 }
 
-func (sc *ShopifyClient) Channels() *Channels {
+func (sc *Client) Channels() *Channels {
 	return &Channels{requester: sc.doRequest, urlBuilder: sc.buildURL}
 }
 
-func (sc *ShopifyClient) Webhooks() *Webhooks {
+func (sc *Client) Webhooks() *Webhooks {
 	return &Webhooks{requester: sc.doRequest, urlBuilder: sc.buildURL}
 }
 
-func (sc *ShopifyClient) debug(msg string) {
+func (sc *Client) debug(msg string) {
 	if sc.Verbose {
 		log.Println(msg)
 	}
 }
 
-func (sc *ShopifyClient) doRequest(req *http.Request) (map[string]json.RawMessage, error) {
+func (sc *Client) doRequest(req *http.Request) (map[string]json.RawMessage, error) {
 
 	sc.debug(fmt.Sprintf("%s: %s \n", req.Method, req.URL))
 	req.SetBasicAuth(sc.settings.username, sc.settings.password)
@@ -78,7 +78,7 @@ func (sc *ShopifyClient) doRequest(req *http.Request) (map[string]json.RawMessag
 	return d, nil
 }
 
-func (sc *ShopifyClient) buildURL(input string) string {
+func (sc *Client) buildURL(input string) string {
 	url, err := url.Parse("https://" + sc.settings.host + input)
 	if err != nil {
 		log.Fatal(err)
