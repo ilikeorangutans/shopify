@@ -9,14 +9,6 @@ import (
 	"strings"
 )
 
-type webhookListResponse struct {
-	Webhooks []*Webhook `json:"webhooks"`
-}
-
-type webhookResponse struct {
-	Webhook *Webhook `json:"webhook"`
-}
-
 type Webhook struct {
 	Format  string `json:"format"`
 	Id      int    `json:"id"`

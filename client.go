@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 )
 
 type Requester func(req *http.Request) (map[string]json.RawMessage, error)
 
-type URLBuilder func(string) string
+type URLBuilder func(...string) string
 
 type settings struct {
 	host, username, password string
@@ -46,6 +47,30 @@ func (sc *Client) Webhooks() *Webhooks {
 	return &Webhooks{requester: sc.doRequest, urlBuilder: sc.buildURL}
 }
 
+func (sc *Client) Apps() *APIPermissions {
+	return &APIPermissions{requester: sc.doRequest, urlBuilder: sc.buildURL}
+}
+
+func (sc *Client) Metafields() *Metafields {
+	return &Metafields{requester: sc.doRequest, urlBuilder: sc.buildURL}
+}
+
+func (sc *Client) FullfillmentServices() *FulfillmentServices {
+	return &FulfillmentServices{requester: sc.doRequest, urlBuilder: sc.buildURL}
+}
+
+func (sc *Client) ProductPublications() *ProductPublications {
+	return &ProductPublications{requester: sc.doRequest, urlBuilder: sc.buildURL}
+}
+
+func (sc *Client) Orders() *Orders {
+	return &Orders{requester: sc.doRequest, urlBuilder: sc.buildURL}
+}
+
+func (sc *Client) Transactions() *Transactions {
+	return &Transactions{requester: sc.doRequest, urlBuilder: sc.buildURL}
+}
+
 func (sc *Client) debug(msg string) {
 	if sc.Verbose {
 		log.Println(msg)
@@ -78,8 +103,8 @@ func (sc *Client) doRequest(req *http.Request) (map[string]json.RawMessage, erro
 	return d, nil
 }
 
-func (sc *Client) buildURL(input string) string {
-	url, err := url.Parse("https://" + sc.settings.host + input)
+func (sc *Client) buildURL(input ...string) string {
+	url, err := url.Parse("https://" + sc.settings.host + strings.Join(input, "/"))
 	if err != nil {
 		log.Fatal(err)
 	}
