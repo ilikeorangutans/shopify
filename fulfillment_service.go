@@ -22,17 +22,17 @@ type FulfillmentService struct {
 	Credential1            string `json:"credential1"`
 	Credential2Exists      bool   `json:"credential2_exists"`
 	InventoryManagement    bool   `json:"inventory_management"`
-	ProviderId             *int   `json:"provider_id"`
+	ProviderID             *int   `json:"provider_id"`
 	RequiresShippingMethod bool   `json:"requires_shipping_method"`
 	TrackingSupport        bool   `json:"tracking_support"`
 }
 
-type FulfillmentServiceWithId struct {
+type FulfillmentServiceWithID struct {
 	*FulfillmentService
-	Id int `json:"id"`
+	ID int `json:"id"`
 }
 
-func (ffs *FulfillmentServices) List() []*FulfillmentServiceWithId {
+func (ffs *FulfillmentServices) List() []*FulfillmentServiceWithID {
 	req, err := http.NewRequest("GET", ffs.urlBuilder("/admin", "fulfillment_services.json?scope=all"), nil)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -48,8 +48,8 @@ func (ffs *FulfillmentServices) List() []*FulfillmentServiceWithId {
 	return decodeServicesJSON(resp["fulfillment_services"])
 }
 
-func decodeServicesJSON(data []byte) []*FulfillmentServiceWithId {
-	var services []*FulfillmentServiceWithId
+func decodeServicesJSON(data []byte) []*FulfillmentServiceWithID {
+	var services []*FulfillmentServiceWithID
 
 	err := json.Unmarshal(data, &services)
 	if err != nil {

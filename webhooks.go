@@ -10,8 +10,9 @@ import (
 )
 
 type Webhook struct {
+	CommonFields
+
 	Format  string `json:"format"`
-	Id      int    `json:"id"`
 	Topic   string `json:"topic"`
 	Address string `json:"address"`
 }
@@ -47,7 +48,7 @@ func (webhooks *Webhooks) Delete(id int) {
 		log.Fatal(err)
 	}
 
-	log.Printf("Deleting webhook [%d] %s %s %s", webhook.Id, webhook.Topic, webhook.Format, webhook.Address)
+	log.Printf("Deleting webhook [%d] %s %s %s", webhook.ID, webhook.Topic, webhook.Format, webhook.Address)
 
 	req, err := http.NewRequest("POST", webhooks.urlBuilder(fmt.Sprintf("/admin/webhooks/%d.json", id)), strings.NewReader("_method=delete"))
 	if err != nil {

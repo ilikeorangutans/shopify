@@ -7,7 +7,7 @@ import (
 )
 
 type APIPermission struct {
-	Id int `json:"id"`
+	ID int `json:"id"`
 }
 
 type APIPermissions struct {

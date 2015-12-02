@@ -39,10 +39,6 @@ func Connect(host, username, password string) *Client {
 	return &Client{client: client, settings: settings{host: host, username: username, password: password}}
 }
 
-func (sc *Client) Channels() *Channels {
-	return &Channels{requester: sc.doRequest, urlBuilder: sc.buildURL}
-}
-
 func (sc *Client) Webhooks() *Webhooks {
 	return &Webhooks{requester: sc.doRequest, urlBuilder: sc.buildURL}
 }
@@ -57,10 +53,6 @@ func (sc *Client) Metafields() *Metafields {
 
 func (sc *Client) FullfillmentServices() *FulfillmentServices {
 	return &FulfillmentServices{requester: sc.doRequest, urlBuilder: sc.buildURL}
-}
-
-func (sc *Client) ProductPublications() *ProductPublications {
-	return &ProductPublications{requester: sc.doRequest, urlBuilder: sc.buildURL}
 }
 
 func (sc *Client) Orders() *Orders {

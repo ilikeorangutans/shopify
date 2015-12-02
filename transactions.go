@@ -13,7 +13,7 @@ type Transactions struct {
 }
 
 type Transaction struct {
-	Id       int     `json:"id"`
+	ID       int     `json:"id"`
 	Amount   float64 `json:"amount,string"`
 	Currency string  `json:"currency"`
 	Status   string  `json:"status"`
@@ -21,7 +21,7 @@ type Transaction struct {
 }
 
 func (t *Transactions) List(order *Order) []*Transaction {
-	req, err := http.NewRequest("GET", t.urlBuilder(fmt.Sprintf("/admin/orders/%d/transactions.json", order.Id)), nil)
+	req, err := http.NewRequest("GET", t.urlBuilder(fmt.Sprintf("/admin/orders/%d/transactions.json", order.ID)), nil)
 	if err != nil {
 		log.Fatal(err)
 	}

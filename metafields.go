@@ -11,14 +11,14 @@ import (
 )
 
 type Metafield struct {
-	Id          int       `json:"id"`
+	ID          int       `json:"id"`
 	Namespace   string    `json:"namespace"`
 	Key         string    `json:"key"`
 	Description string    `json:"description"`
 	Resource    string    `json:"owner_resource"`
 	Value       string    `json:"value"`
 	Type        string    `json:"value_type"`
-	ResourceId  int       `json:"owner_id"`
+	ResourceID  int       `json:"owner_id"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -31,8 +31,8 @@ type Metafields struct {
 	urlBuilder URLBuilder
 }
 
-func (mf *Metafields) Create(under, namespace, key, value, value_type string) *Metafield {
-	payload := fmt.Sprintf("{\"metafield\":{\"namespace\": \"%s\", \"key\":\"%s\", \"value\":\"%s\", \"value_type\": \"%s\", \"created_at\":Mon, 13 Apr 2015 16:22:16 -0400}}", namespace, key, value, value_type)
+func (mf *Metafields) Create(under, namespace, key, value, valueType string) *Metafield {
+	payload := fmt.Sprintf("{\"metafield\":{\"namespace\": \"%s\", \"key\":\"%s\", \"value\":\"%s\", \"value_type\": \"%s\", \"created_at\":Mon, 13 Apr 2015 16:22:16 -0400}}", namespace, key, value, valueType)
 
 	req, err := http.NewRequest("POST", mf.urlBuilder("/admin", under, "metafields.json"), strings.NewReader(payload))
 	if err != nil {
