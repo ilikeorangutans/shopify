@@ -8,8 +8,9 @@ import (
 
 func TestDecodeAssets(t *testing.T) {
 
-	assets, err := decodeAssetsList([]byte(AssetListJSON))
+	x, err := decodeAssetsList([]byte(AssetListJSON))
 
+	assets := x.([]*Asset)
 	assert.Nil(t, err)
 	assert.Equal(t, 23, len(assets))
 }
