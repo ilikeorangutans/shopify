@@ -1,18 +1,85 @@
 package shopify
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
 )
 
-func TestDecodeAssets(t *testing.T) {
+// AssertingURLBuilder returns a URLBuilder that asserts that the built URL ends with the given expected string.
+func AssertingURLBuilder(t *testing.T, expected string) URLBuilder {
+	return func(p ...string) string {
+
+		joined := strings.Join(p, "/")
+		assert.Equal(t, expected, joined)
+		return joined
+	}
+}
+
+func DummyRequestAndParse(result interface{}, err error) RequestAndParse {
+	return func(req *http.Request, element string, f JSONResourceParser) (interface{}, error) {
+		return result, err
+	}
+}
+
+var testTheme = &Theme{
+	CommonFields: CommonFields{ID: 12345},
+}
+
+func TestAssetsList(t *testing.T) {
+	assets := &Assets{
+		buildURL:        AssertingURLBuilder(t, "/admin/themes/12345/assets.json"),
+		Theme:           testTheme,
+		requestAndParse: DummyRequestAndParse([]*Asset{}, nil),
+	}
+
+	assets.List()
+}
+
+func TestAssetsGet(t *testing.T) {
+	assets := &Assets{
+		buildURL:        AssertingURLBuilder(t, "/admin/themes/12345/assets.json?asset[key]=templates/my-asset-key.liquid"),
+		Theme:           testTheme,
+		requestAndParse: DummyRequestAndParse(&Asset{DecodingComplete: make(chan bool)}, nil),
+	}
+
+	assets.Download("templates/my-asset-key.liquid")
+
+}
+
+func TestDownloadAll(t *testing.T) {
+	assets := &Assets{
+		buildURL:        AssertingURLBuilder(t, "/admin/themes/12345/assets.json?fields=key,value,attachment"),
+		Theme:           testTheme,
+		requestAndParse: DummyRequestAndParse([]*Asset{}, nil),
+	}
+
+	assets.DownloadAll()
+}
+
+func TestDecodeAssetsList(t *testing.T) {
 
 	x, err := decodeAssetsList([]byte(AssetListJSON))
 
 	assets := x.([]*Asset)
 	assert.Nil(t, err)
 	assert.Equal(t, 23, len(assets))
+}
+
+func TestDecodeAsset(t *testing.T) {
+	x, err := decodeAsset([]byte(SingleAssetWithBase64Attachment))
+	asset := x.(*Asset)
+	select {
+	case <-asset.DecodingComplete:
+	case <-time.After(time.Duration(50 * time.Millisecond)):
+		t.Fatal("Decoding should be complete by now; if this test fails it might indicate that the actual decoding operation was too slow. This is not necessarily a failure!")
+	}
+
+	assert.Nil(t, err)
+	assert.Equal(t, "assets/arrow-dark.png", asset.Key)
+	assert.True(t, asset.HasAttachment())
 }
 
 const AssetListJSON = `
@@ -225,4 +292,8 @@ const AssetListJSON = `
       "theme_id": 828155753
     }
   ]
+`
+
+const SingleAssetWithBase64Attachment = `
+{"key":"assets\/arrow-dark.png","public_url":"https:\/\/cdn.shopify.com\/s\/files\/1\/0761\/2111\/t\/1\/assets\/arrow-dark.png?4540024002816414779","attachment":"iVBORw0KGgoAAAANSUhEUgAAAAcAAAAECAYAAABCxiV9AAAAGXRFWHRTb2Z0\nd2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9i\nZS54bXAAAAAAADw\/eHBhY2tldCBiZWdpbj0i77u\/IiBpZD0iVzVNME1wQ2Vo\naUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6\nbnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYxIDY0\nLjE0MDk0OSwgMjAxMC8xMi8wNy0xMDo1NzowMSAgICAgICAgIj4gPHJkZjpS\nREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJk\nZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIg\neG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxu\nczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1s\nbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9S\nZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9w\nIENTNS4xIE1hY2ludG9zaCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo1\nMUM5QzRCMDZGOTUxMUUxQTAzQ0U3RDQ4RjU1M0ZDQiIgeG1wTU06RG9jdW1l\nbnRJRD0ieG1wLmRpZDo1MUM5QzRCMTZGOTUxMUUxQTAzQ0U3RDQ4RjU1M0ZD\nQiI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAu\naWlkOjIyQTZFOUVCNkY5NTExRTFBMDNDRTdENDhGNTUzRkNCIiBzdFJlZjpk\nb2N1bWVudElEPSJ4bXAuZGlkOjIyQTZFOUVDNkY5NTExRTFBMDNDRTdENDhG\nNTUzRkNCIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4\nbXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+21NY3QAAAChJREFUeNpiYGBg\naABihv\/\/\/6NgmDgDugJkCRQFKBJQlQwYEkAAEGAAgLIYbJBud\/kAAAAASUVO\nRK5CYII=\n","created_at":"2015-02-02T13:15:14-05:00","updated_at":"2015-02-02T13:15:14-05:00","content_type":"image\/png","size":950,"theme_id":9751085,"warnings":[]}
 `
