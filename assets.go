@@ -66,6 +66,11 @@ func (a *Assets) themeBaseURL() string {
 	return fmt.Sprintf("/admin/themes/%d", a.Theme.ID)
 }
 
+// Asset is a single asset in a Shopify theme. Assets are uniquely identified in a theme by their Key field
+// and can have either a (string) value or a binary attachment. Attachments are retrieved BASE64 encoded and
+// have to be decoded prior to usage. To check if either decoding or encoding is complete one has to read
+// from the DecodingComplete or EncodingComplete channels. Reads from either channel will block until the
+// operations are complete.
 type Asset struct {
 	Timestamps
 
@@ -82,6 +87,7 @@ type Asset struct {
 	EncodedAttachment string `json:"attachment"`
 	// DecodingComplete is a channel that blocks until decoding of this asset's attachment is complete.
 	DecodingComplete chan bool `json:"-"`
+	// EncodingComplete is a channel that blocks until encoding of this asset's attachment is complete.
 	EncodingComplete chan bool `json:"-"`
 }
 
