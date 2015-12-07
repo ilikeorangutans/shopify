@@ -3,11 +3,11 @@ package shopify
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -15,32 +15,6 @@ import (
 const DefaultTimeout = time.Duration(10 * time.Second)
 
 type Requester func(req *http.Request) (map[string]json.RawMessage, error)
-
-type URLBuilder func(...string) string
-
-type ClientSettings struct {
-	host, username, password string
-	timeout                  time.Duration
-}
-
-func (cs ClientSettings) ShopURL() string {
-	pattern := regexp.MustCompile("https?://")
-	if pattern.MatchString(cs.host) {
-		return cs.host
-	} else {
-		return fmt.Sprintf("https://%s", cs.host)
-	}
-}
-
-func (cs ClientSettings) AuthenticateRequest(req *http.Request) {
-	if len(cs.username) > 0 && len(cs.password) > 0 {
-		req.SetBasicAuth(cs.username, cs.password)
-	}
-}
-
-type RequestAuthenticator interface {
-	AuthenticateRequest(*http.Request)
-}
 
 // Client is the facade for all API connections to Shopify. Obtain a new instance with the NewClient function.
 type Client struct {
@@ -60,7 +34,10 @@ func NewClientWithSettings(settings ClientSettings) *Client {
 	client := &http.Client{
 		Timeout: settings.timeout,
 	}
-	return &Client{client: client, Settings: settings}
+	return &Client{
+		client:   client,
+		Settings: settings,
+	}
 }
 
 // Connect attempts a connection to the configured server. If the server responds with a 4xx or 5xx
@@ -84,39 +61,42 @@ func (c *Client) Connect() error {
 	return nil
 }
 
+func (c *Client) RequestAndDecode(r *http.Request, name string, v interface{}) error {
+	return nil
+}
+
 func (c *Client) Webhooks() *Webhooks {
-	return &Webhooks{requester: c.doRequest, urlBuilder: c.buildURL}
+	return &Webhooks{RemoteJSONResource: c}
 }
 
 func (c *Client) Apps() *APIPermissions {
-	return &APIPermissions{requester: c.doRequest, urlBuilder: c.buildURL}
+	return &APIPermissions{RemoteJSONResource: c}
 }
 
 func (c *Client) Metafields() *Metafields {
-	return &Metafields{requester: c.doRequest, urlBuilder: c.buildURL}
+	return &Metafields{RemoteJSONResource: c}
 }
 
 func (c *Client) FullfillmentServices() *FulfillmentServices {
-	return &FulfillmentServices{requester: c.doRequest, urlBuilder: c.buildURL}
+	return &FulfillmentServices{RemoteJSONResource: c}
 }
 
 func (c *Client) Orders() *Orders {
-	return &Orders{requester: c.doRequest, urlBuilder: c.buildURL}
+	return &Orders{RemoteJSONResource: c}
 }
 
 func (c *Client) Transactions() *Transactions {
-	return &Transactions{requester: c.doRequest, urlBuilder: c.buildURL}
+	return &Transactions{RemoteJSONResource: c}
 }
 
 func (c *Client) Themes() *Themes {
-	return &Themes{requestAndParse: c.requestAndParseJSON, urlBuilder: c.buildURL}
+	return &Themes{RemoteJSONResource: c}
 }
 
 func (c *Client) Assets(theme *Theme) *Assets {
 	return &Assets{
-		buildURL:        c.buildURL,
-		requestAndParse: c.requestAndParseJSON,
-		Theme:           theme,
+		RemoteJSONResource: c,
+		Theme:              theme,
 	}
 }
 
@@ -127,24 +107,12 @@ func (c *Client) debug(msg string) {
 }
 
 func (c *Client) doRequest(req *http.Request) (map[string]json.RawMessage, error) {
-	c.debug(fmt.Sprintf("%s: %s \n", req.Method, req.URL))
-	c.Settings.AuthenticateRequest(req)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(req)
+	body, err := c.Request(req)
 	if err != nil {
 		return nil, err
 	}
-
-	b, _ := httputil.DumpResponse(resp, true)
-	c.debug(fmt.Sprintf("Response: \n%s", b))
-
-	if err := FromResponse(resp); err != nil {
-		return nil, err
-	}
-
-	decoder := json.NewDecoder(resp.Body)
+	defer body.Close()
+	decoder := json.NewDecoder(body)
 
 	var d map[string]json.RawMessage
 
@@ -162,20 +130,27 @@ func (c *Client) buildURL(input ...string) string {
 	return url.String()
 }
 
-type JSONResourceParser func(body []byte) (interface{}, error)
+func (c *Client) BuildURL(segments ...string) string {
+	return c.buildURL(segments...)
+}
 
-type RequestAndParse func(*http.Request, string, JSONResourceParser) (interface{}, error)
+func (c *Client) Request(req *http.Request) (io.ReadCloser, error) {
+	c.debug(fmt.Sprintf("%s: %s \n", req.Method, req.URL))
+	c.Settings.AuthenticateRequest(req)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 
-func (c *Client) requestAndParseJSON(req *http.Request, element string, parser JSONResourceParser) (interface{}, error) {
-	raw, err := c.doRequest(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
-	data, found := raw[element]
-	if !found {
-		return nil, fmt.Errorf("Element \"%s\" could not be found in response from server.", element)
+	b, _ := httputil.DumpResponse(resp, true)
+	c.debug(fmt.Sprintf("Response: \n%s", b))
+
+	if err := FromResponse(resp); err != nil {
+		return nil, err
 	}
 
-	return parser(data)
+	return resp.Body, nil
 }

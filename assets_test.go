@@ -3,20 +3,19 @@ package shopify
 import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 )
 
 // AssertingURLBuilder returns a URLBuilder that asserts that the built URL ends with the given expected string.
-func AssertingURLBuilder(t *testing.T, expected string) URLBuilder {
-	return func(p ...string) string {
-
-		joined := strings.Join(p, "/")
-		assert.Equal(t, expected, joined)
-		return joined
-	}
-}
+//func AssertingURLBuilder(t *testing.T, expected string)  {
+//return func(p ...string) string {
+//
+//joined := strings.Join(p, "/")
+//assert.Equal(t, expected, joined)
+//return joined
+//}
+//}
 
 func DummyRequestAndParse(result interface{}, err error) RequestAndParse {
 	return func(req *http.Request, element string, f JSONResourceParser) (interface{}, error) {
@@ -30,9 +29,8 @@ var testTheme = &Theme{
 
 func TestAssetsList(t *testing.T) {
 	assets := &Assets{
-		buildURL:        AssertingURLBuilder(t, "/admin/themes/12345/assets.json"),
-		Theme:           testTheme,
-		requestAndParse: DummyRequestAndParse([]*Asset{}, nil),
+		RemoteJSONResource: NewAssertingRemoteJSONResource(t, "", 200, nil),
+		Theme:              testTheme,
 	}
 
 	assets.List()
@@ -40,9 +38,8 @@ func TestAssetsList(t *testing.T) {
 
 func TestAssetsGet(t *testing.T) {
 	assets := &Assets{
-		buildURL:        AssertingURLBuilder(t, "/admin/themes/12345/assets.json?asset[key]=templates/my-asset-key.liquid"),
-		Theme:           testTheme,
-		requestAndParse: DummyRequestAndParse(&Asset{DecodingComplete: make(chan bool)}, nil),
+		RemoteJSONResource: NewAssertingRemoteJSONResource(t, "/admin/themes/12345/assets.json?asset[key]=templates/my-asset-key.liquid", http.StatusOK, nil),
+		Theme:              testTheme,
 	}
 
 	assets.Download("templates/my-asset-key.liquid")
@@ -51,9 +48,8 @@ func TestAssetsGet(t *testing.T) {
 
 func TestDownloadAll(t *testing.T) {
 	assets := &Assets{
-		buildURL:        AssertingURLBuilder(t, "/admin/themes/12345/assets.json?fields=key,value,attachment"),
-		Theme:           testTheme,
-		requestAndParse: DummyRequestAndParse([]*Asset{}, nil),
+		RemoteJSONResource: NewAssertingRemoteJSONResource(t, "/admin/themes/12345/assets.json?fields=key,value,attachment", http.StatusOK, nil),
+		Theme:              testTheme,
 	}
 
 	assets.DownloadAll()

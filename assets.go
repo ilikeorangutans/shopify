@@ -8,23 +8,23 @@ import (
 )
 
 type Assets struct {
-	buildURL        URLBuilder
-	requestAndParse RequestAndParse
-	Theme           *Theme
+	RemoteJSONResource
+	Theme *Theme
 }
 
 // List downloads metadata for all assets associated with the Theme set on the instance.
 func (a *Assets) List() ([]*Asset, error) {
 
-	req, err := http.NewRequest("GET", a.buildURL(a.themeBaseURL(), "assets.json"), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets.json"), nil)
 	if err != nil {
 		return nil, err
 	}
-	assets, err := a.requestAndParse(req, "assets", decodeAssetsList)
-	if err != nil {
+
+	var assets []*Asset
+	if err := a.RequestAndDecode(req, "assets", assets); err != nil {
 		return nil, err
 	}
-	return assets.([]*Asset), nil
+	return assets, nil
 }
 
 type AttachmentRetrieval struct {
@@ -34,29 +34,27 @@ type AttachmentRetrieval struct {
 
 // DownloadAll downloads all assets including their attachments. This can cause large requests!
 func (a *Assets) DownloadAll() ([]*Asset, error) {
-	req, err := http.NewRequest("GET", a.buildURL(a.themeBaseURL(), "assets.json?fields=key,value,attachment"), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets.json?fields=key,value,attachment"), nil)
 	if err != nil {
 		return nil, err
 	}
-	assets, err := a.requestAndParse(req, "assets", decodeAssetsList)
-	if err != nil {
+	var assets []*Asset
+	if err := a.RequestAndDecode(req, "assets", assets); err != nil {
 		return nil, err
 	}
-	return assets.([]*Asset), nil
+	return assets, nil
 }
 
 // Download downloads a single Asset identified by the given key with all its data.
 func (a *Assets) Download(key string) (*Asset, error) {
-	req, err := http.NewRequest("GET", a.buildURL(a.themeBaseURL(), fmt.Sprintf("assets.json?asset[key]=%s", key)), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), fmt.Sprintf("assets.json?asset[key]=%s", key)), nil)
 	if err != nil {
 		return nil, err
 	}
-	x, err := a.requestAndParse(req, "asset", decodeAsset)
-	if err != nil {
+	var asset *Asset
+	if err := a.RequestAndDecode(req, "asset", asset); err != nil {
 		return nil, err
 	}
-	asset := x.(*Asset)
-
 	asset.decodeAttachment()
 
 	return asset, nil
