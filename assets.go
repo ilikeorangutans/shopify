@@ -2,62 +2,63 @@ package shopify
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
 type Assets struct {
-	buildURL        URLBuilder
-	requestAndParse RequestAndParse
-	Theme           *Theme
+	RemoteJSONResource
+	Theme *Theme
 }
 
 // List downloads metadata for all assets associated with the Theme set on the instance.
 func (a *Assets) List() ([]*Asset, error) {
-
-	req, err := http.NewRequest("GET", a.buildURL(a.themeBaseURL(), "assets.json"), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets.json"), nil)
 	if err != nil {
 		return nil, err
 	}
-	assets, err := a.requestAndParse(req, "assets", decodeAssetsList)
-	if err != nil {
+
+	var assets []*Asset
+	if err := a.RequestAndDecode(req, "assets", &assets); err != nil {
 		return nil, err
 	}
-	return assets.([]*Asset), nil
-}
-
-type AttachmentRetrieval struct {
-	Asset *Asset
-	Error error
+	return assets, nil
 }
 
 // DownloadAll downloads all assets including their attachments. This can cause large requests!
 func (a *Assets) DownloadAll() ([]*Asset, error) {
-	req, err := http.NewRequest("GET", a.buildURL(a.themeBaseURL(), "assets.json?fields=key,value,attachment"), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets.json?fields=key,value,attachment"), nil)
 	if err != nil {
 		return nil, err
 	}
-	assets, err := a.requestAndParse(req, "assets", decodeAssetsList)
-	if err != nil {
+	var assets []*Asset
+	if err := a.RequestAndDecode(req, "assets", &assets); err != nil {
 		return nil, err
 	}
-	return assets.([]*Asset), nil
+
+	for i := range assets {
+		asset := assets[i]
+		asset.DecodingComplete = make(chan struct{})
+		go asset.decodeAttachment()
+	}
+
+	return assets, nil
 }
 
 // Download downloads a single Asset identified by the given key with all its data.
 func (a *Assets) Download(key string) (*Asset, error) {
-	req, err := http.NewRequest("GET", a.buildURL(a.themeBaseURL(), fmt.Sprintf("assets.json?asset[key]=%s", key)), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), fmt.Sprintf("assets.json?asset[key]=%s", key)), nil)
 	if err != nil {
 		return nil, err
 	}
-	x, err := a.requestAndParse(req, "asset", decodeAsset)
-	if err != nil {
+	var asset *Asset
+	if err := a.RequestAndDecode(req, "asset", &asset); err != nil {
 		return nil, err
 	}
-	asset := x.(*Asset)
-
-	asset.decodeAttachment()
+	asset.DecodingComplete = make(chan struct{})
+	if err := asset.decodeAttachment(); err != nil {
+		return nil, err
+	}
 
 	return asset, nil
 }
@@ -81,8 +82,8 @@ type Asset struct {
 	// EncodedAttachment holds a base64 encoded representation of the attachment.
 	EncodedAttachment string `json:"attachment"`
 	// DecodingComplete is a channel that blocks until decoding of this asset's attachment is complete.
-	DecodingComplete chan bool `json:"-"`
-	EncodingComplete chan bool `json:"-"`
+	DecodingComplete chan struct{} `json:"-"`
+	EncodingComplete chan struct{} `json:"-"`
 }
 
 func (a *Asset) HasAttachment() bool {
@@ -94,48 +95,17 @@ func (a *Asset) String() string {
 }
 
 func (a *Asset) decodeAttachment() error {
+	defer close(a.DecodingComplete)
 	if len(a.EncodedAttachment) == 0 {
-		close(a.DecodingComplete)
 		return nil
 	}
 	b, err := base64.StdEncoding.DecodeString(a.EncodedAttachment)
 	if err != nil {
-		close(a.DecodingComplete)
 		return err
 	}
 	if a.Size != len(b) {
-		close(a.DecodingComplete)
 		return fmt.Errorf("Attachment length does not match expected value, expected %d bytes but got %d", a.Size, len(b))
 	}
 	a.Attachment = b
-	a.DecodingComplete <- true
-	close(a.DecodingComplete)
 	return nil
-}
-
-func decodeAssetsList(body []byte) (interface{}, error) {
-	var assets []*Asset
-	err := json.Unmarshal(body, &assets)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range assets {
-		asset := assets[i]
-		asset.DecodingComplete = make(chan bool)
-		go asset.decodeAttachment()
-	}
-
-	return assets, nil
-}
-
-func decodeAsset(body []byte) (interface{}, error) {
-	var asset *Asset
-	err := json.Unmarshal(body, &asset)
-	if err != nil {
-		return nil, err
-	}
-	asset.DecodingComplete = make(chan bool)
-	go asset.decodeAttachment()
-	return asset, nil
 }
