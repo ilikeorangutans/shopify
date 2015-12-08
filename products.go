@@ -10,10 +10,11 @@ type Products struct {
 
 type Product struct {
 	CommonFields
+	Title string `json:"title"`
 }
 
 func (p *Products) List() ([]*Product, error) {
-	url := p.BuildURL("foo", "bar")
+	url := p.BuildURL("products")
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err

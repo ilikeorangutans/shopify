@@ -13,7 +13,7 @@ type Assets struct {
 
 // List downloads metadata for all assets associated with the Theme set on the instance.
 func (a *Assets) List() ([]*Asset, error) {
-	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets.json"), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (a *Assets) List() ([]*Asset, error) {
 
 // DownloadAll downloads all assets including their attachments. This can cause large requests!
 func (a *Assets) DownloadAll() ([]*Asset, error) {
-	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets.json?fields=key,value,attachment"), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), "assets?fields=key,value,attachment"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (a *Assets) DownloadAll() ([]*Asset, error) {
 
 // Download downloads a single Asset identified by the given key with all its data.
 func (a *Assets) Download(key string) (*Asset, error) {
-	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), fmt.Sprintf("assets.json?asset[key]=%s", key)), nil)
+	req, err := http.NewRequest("GET", a.BuildURL(a.themeBaseURL(), fmt.Sprintf("assets?asset[key]=%s", key)), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (a *Assets) Download(key string) (*Asset, error) {
 }
 
 func (a *Assets) themeBaseURL() string {
-	return fmt.Sprintf("/admin/themes/%d", a.Theme.ID)
+	return fmt.Sprintf("themes/%d", a.Theme.ID)
 }
 
 type Asset struct {

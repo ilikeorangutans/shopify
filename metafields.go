@@ -32,7 +32,7 @@ type Metafields struct {
 func (mf *Metafields) Create(under, namespace, key, value, valueType string) *Metafield {
 	payload := fmt.Sprintf("{\"metafield\":{\"namespace\": \"%s\", \"key\":\"%s\", \"value\":\"%s\", \"value_type\": \"%s\", \"created_at\":Mon, 13 Apr 2015 16:22:16 -0400}}", namespace, key, value, valueType)
 
-	req, err := http.NewRequest("POST", mf.BuildURL("/admin", under, "metafields.json"), strings.NewReader(payload))
+	req, err := http.NewRequest("POST", mf.BuildURL(under, "metafields"), strings.NewReader(payload))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func (mf *Metafields) Create(under, namespace, key, value, valueType string) *Me
 }
 
 func (mf *Metafields) List(under string) ([]*Metafield, error) {
-	req, err := http.NewRequest("GET", mf.BuildURL("/admin", under, "metafields.json"), nil)
+	req, err := http.NewRequest("GET", mf.BuildURL(under, "metafields"), nil)
 	if err != nil {
 		return nil, err
 	}

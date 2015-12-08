@@ -23,9 +23,9 @@ type Webhooks struct {
 func (webhooks *Webhooks) Create(topic string, address *url.URL, format string) (*Webhook, error) {
 
 	payload := fmt.Sprintf("{\"webhook\":{\"topic\":\"%s\", \"address\":\"%s\", \"format\": \"%s\"}}", topic, address.String(), format)
-	req, err := http.NewRequest("POST", webhooks.BuildURL("/admin/webhooks.json"), strings.NewReader(payload))
+	req, err := http.NewRequest("POST", webhooks.BuildURL("webhooks"), strings.NewReader(payload))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var webhook *Webhook
@@ -45,7 +45,7 @@ func (webhooks *Webhooks) Delete(id int64) {
 
 	log.Printf("Deleting webhook [%d] %s %s %s", webhook.ID, webhook.Topic, webhook.Format, webhook.Address)
 
-	req, err := http.NewRequest("POST", webhooks.BuildURL(fmt.Sprintf("/admin/webhooks/%d.json", id)), strings.NewReader("_method=delete"))
+	req, err := http.NewRequest("DELETE", webhooks.BuildURL(fmt.Sprintf("webhooks/%d", id)), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func (webhooks *Webhooks) Delete(id int64) {
 }
 
 func (ws *Webhooks) List() ([]*Webhook, error) {
-	req, err := http.NewRequest("GET", ws.BuildURL("/admin/webhooks.json"), nil)
+	req, err := http.NewRequest("GET", ws.BuildURL("webhooks"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (ws *Webhooks) List() ([]*Webhook, error) {
 }
 
 func (ws *Webhooks) Get(id int64) (*Webhook, error) {
-	req, err := http.NewRequest("GET", ws.BuildURL(fmt.Sprintf("/admin/webhooks/%d.json", id)), nil)
+	req, err := http.NewRequest("GET", ws.BuildURL(fmt.Sprintf("webhooks/%d", id)), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/http/httputil"
 )
 
 // RemoteResource abstracts http requests.
@@ -17,16 +19,26 @@ type RemoteResource interface {
 type httpRemoteResource struct {
 	client              *http.Client
 	authenticateRequest AuthenticateRequest
+	settings            ClientSettings
 }
 
 func (rr *httpRemoteResource) Request(req *http.Request) (io.ReadCloser, error) {
+	if rr.settings.dumpRequestURLs {
+		log.Printf("%s %s\n", req.Method, req.RequestURI)
+	}
 	rr.authenticateRequest(req)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
+	if rr.settings.dumpRequests {
+		rr.dumpRequest(req)
+	}
 	resp, err := rr.client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	if rr.settings.dumpResponses {
+		rr.dumpResponse(resp)
 	}
 
 	if err := FromResponse(resp); err != nil {
@@ -34,6 +46,22 @@ func (rr *httpRemoteResource) Request(req *http.Request) (io.ReadCloser, error) 
 	}
 
 	return resp.Body, nil
+}
+
+func (rr *httpRemoteResource) dumpRequest(req *http.Request) {
+	dump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s", dump)
+}
+
+func (rr *httpRemoteResource) dumpResponse(resp *http.Response) {
+	dump, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s", dump)
 }
 
 func NewRemoteResource(settings ClientSettings) RemoteResource {

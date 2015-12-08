@@ -20,7 +20,7 @@ type Themes struct {
 }
 
 func (t *Themes) List() ([]*Theme, error) {
-	req, err := http.NewRequest("GET", t.BuildURL("/admin/themes"), nil)
+	req, err := http.NewRequest("GET", t.BuildURL("themes"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (t *Themes) List() ([]*Theme, error) {
 }
 
 func (t *Themes) Get(id int64) (*Theme, error) {
-	req, err := http.NewRequest("GET", t.BuildURL(fmt.Sprintf("/admin/themes/%d.json", id)), nil)
+	req, err := http.NewRequest("GET", t.BuildURL(fmt.Sprintf("themes/%d.json", id)), nil)
 	if err != nil {
 		return nil, err
 	}

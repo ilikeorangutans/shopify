@@ -17,7 +17,7 @@ type Orders struct {
 }
 
 func (o *Orders) Get(id int) (*Order, error) {
-	req, err := http.NewRequest("GET", o.BuildURL(fmt.Sprintf("/admin/orders/%d.json", id)), nil)
+	req, err := http.NewRequest("GET", o.BuildURL(fmt.Sprintf("orders/%d", id)), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func (o *Orders) Get(id int) (*Order, error) {
 }
 
 func (o *Orders) List() ([]*Order, error) {
-	req, err := http.NewRequest("GET", o.BuildURL("/admin/orders.json"), nil)
+	req, err := http.NewRequest("GET", o.BuildURL("orders"), nil)
 	if err != nil {
 		return nil, err
 	}

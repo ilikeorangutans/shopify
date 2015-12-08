@@ -13,7 +13,7 @@ type APIPermissions struct {
 }
 
 func (ap *APIPermissions) List() ([]*APIPermission, error) {
-	req, err := http.NewRequest("GET", ap.BuildURL("/admin/apps.json"), nil)
+	req, err := http.NewRequest("GET", ap.BuildURL("apps"), nil)
 	if err != nil {
 		return nil, err
 	}

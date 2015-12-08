@@ -4,6 +4,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -30,7 +32,8 @@ func TestConnectWithInvalidCredentials(t *testing.T) {
 
 	client := NewClient(ts.URL, "invalid", "invalid")
 	err := client.Connect()
-	assert.Equal(t, "Server responded with \"401 Unauthorized\", check credentials", err.Error())
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), strconv.Itoa(http.StatusUnauthorized)))
 }
 
 func TestConnectWithInternalServerError(t *testing.T) {
@@ -40,7 +43,7 @@ func TestConnectWithInternalServerError(t *testing.T) {
 	client := NewClient(ts.URL, "", "")
 	err := client.Connect()
 	assert.NotNil(t, err)
-	assert.Equal(t, "Error connecting to server: 500 Internal Server Error", err.Error())
+	assert.True(t, strings.Contains(err.Error(), strconv.Itoa(http.StatusInternalServerError)))
 }
 
 func TestConnectWithTimeout(t *testing.T) {

@@ -32,7 +32,7 @@ type FulfillmentServiceWithID struct {
 }
 
 func (ffs *FulfillmentServices) List() ([]*FulfillmentServiceWithID, error) {
-	req, err := http.NewRequest("GET", ffs.BuildURL("/admin", "fulfillment_services.json?scope=all"), nil)
+	req, err := http.NewRequest("GET", ffs.BuildURL("fulfillment_services?scope=all"), nil)
 	req.Header.Set("Content-Type", "application/json")
 
 	if err != nil {
@@ -66,7 +66,7 @@ func (ffs *FulfillmentServices) Create(service *FulfillmentService) (*Fulfillmen
 
 	payload := fmt.Sprintf("%s", b)
 
-	req, err := http.NewRequest("POST", ffs.BuildURL("/admin", "fulfillment_services.json"), strings.NewReader(payload))
+	req, err := http.NewRequest("POST", ffs.BuildURL("fulfillment_services"), strings.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 
 	if err != nil {

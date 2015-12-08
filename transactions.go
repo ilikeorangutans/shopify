@@ -18,7 +18,7 @@ type Transaction struct {
 }
 
 func (t *Transactions) List(order *Order) ([]*Transaction, error) {
-	req, err := http.NewRequest("GET", t.BuildURL(fmt.Sprintf("/admin/orders/%d/transactions.json", order.ID)), nil)
+	req, err := http.NewRequest("GET", t.BuildURL(fmt.Sprintf("orders/%d/transactions", order.ID)), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -1,18 +1,12 @@
 package shopify
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
-	"net/http/httputil"
 	"time"
 )
 
 const DefaultTimeout = time.Duration(10 * time.Second)
-
-type Requester func(req *http.Request) (map[string]json.RawMessage, error)
 
 // Client is the facade for all API connections to Shopify. Obtain a new instance with the NewClient function.
 type Client struct {
@@ -24,7 +18,7 @@ type Client struct {
 
 // NewClient returns a new client with default settings and the given host, username and password.
 func NewClient(host, username, password string) *Client {
-	settings := ClientSettings{host: host, username: username, password: password, timeout: DefaultTimeout}
+	settings := ClientSettings{host: host, username: username, password: password, timeout: DefaultTimeout, dumpRequestURLs: true}
 	return NewClientWithSettings(settings)
 }
 
@@ -37,9 +31,10 @@ func NewClientWithSettings(settings ClientSettings) *Client {
 		client:   client,
 		Settings: settings,
 		RemoteJSONResource: &ShopifyRemoteJSONResource{
-			URLBuilder:     &ShopifyAdminURLBuilder{},
+			URLBuilder:     &ShopifyAdminURLBuilder{baseURL: settings.ShopURL()},
 			RemoteResource: NewRemoteResource(settings),
 		},
+		Verbose: true,
 	}
 }
 
@@ -54,24 +49,15 @@ func NewClientWithSettingsAndRemoteResource(settings ClientSettings, remote Remo
 // status code, this method will return an error. It's recommended to use this function at least
 // once after creating a new client to ensure valid settings and credentials.
 func (c *Client) Connect() error {
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/admin/", c.Settings.ShopURL()), nil)
+	req, err := http.NewRequest("HEAD", fmt.Sprintf("%s/admin/shop", c.Settings.ShopURL()), nil)
 	if err != nil {
 		return err
 	}
-	resp, err := c.client.Do(req)
+	_, err = c.Request(req)
 	if err != nil {
 		return fmt.Errorf("Error connecting to server: \"%s\"", err.Error())
-	} else if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		return fmt.Errorf("Server responded with \"%s\", check credentials", resp.Status)
-	} else if resp.StatusCode >= 500 {
-		return fmt.Errorf("Error connecting to server: %s", resp.Status)
 	}
 
-	return nil
-}
-
-func (c *Client) RequestAndDecode(r *http.Request, name string, v interface{}) error {
 	return nil
 }
 
@@ -103,36 +89,13 @@ func (c *Client) Themes() *Themes {
 	return &Themes{RemoteJSONResource: c}
 }
 
+func (c *Client) Products() *Products {
+	return &Products{RemoteJSONResource: c}
+}
+
 func (c *Client) Assets(theme *Theme) *Assets {
 	return &Assets{
 		RemoteJSONResource: c,
 		Theme:              theme,
 	}
-}
-
-func (c *Client) debug(msg string) {
-	if c.Verbose {
-		log.Println(msg)
-	}
-}
-
-func (c *Client) Request(req *http.Request) (io.ReadCloser, error) {
-	c.debug(fmt.Sprintf("%s: %s \n", req.Method, req.URL))
-	c.Settings.AuthenticateRequest(req)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	b, _ := httputil.DumpResponse(resp, true)
-	c.debug(fmt.Sprintf("Response: \n%s", b))
-
-	if err := FromResponse(resp); err != nil {
-		return nil, err
-	}
-
-	return resp.Body, nil
 }

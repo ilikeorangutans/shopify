@@ -10,8 +10,10 @@ import (
 type AuthenticateRequest func(*http.Request)
 
 type ClientSettings struct {
-	host, username, password string
-	timeout                  time.Duration
+	host, username, password    string
+	timeout                     time.Duration
+	dumpRequestURLs             bool
+	dumpRequests, dumpResponses bool
 }
 
 func (cs ClientSettings) ShopURL() string {
