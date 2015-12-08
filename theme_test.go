@@ -5,24 +5,39 @@ import (
 	"testing"
 )
 
-func TestDecodeThemesList(t *testing.T) {
-	themes, err := decodeThemesList([]byte(ThemesListJSON))
+func TestThemesList(t *testing.T) {
+	themes := &Themes{
+		RemoteJSONResource: &ShopifyRemoteJSONResource{
+			URLBuilder: &ShopifyAdminURLBuilder{},
+			RemoteResource: &TestRemoteResource{
+				body: []byte(ThemesListJSON),
+			},
+		},
+	}
 
+	th, err := themes.List()
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(themes.([]*Theme)))
+	assert.Equal(t, 3, len(th))
 }
 
-func TestDecodeTheme(t *testing.T) {
-	x, err := decodeTheme([]byte(ThemeJSON))
-	theme := x.(*Theme)
+func TestThemesGet(t *testing.T) {
+	themes := &Themes{
+		RemoteJSONResource: &ShopifyRemoteJSONResource{
+			URLBuilder: &ShopifyAdminURLBuilder{},
+			RemoteResource: &TestRemoteResource{
+				body: []byte(ThemeJSON),
+			},
+		},
+	}
+
+	th, err := themes.Get(828155753)
 	assert.Nil(t, err)
-	assert.NotNil(t, theme)
-	assert.Equal(t, 828155753, theme.ID)
-	t.Log(theme)
+	assert.Equal(t, 828155753, th.ID)
 }
 
 const ThemesListJSON = `
-[
+{
+  "themes":[
     {
       "id": 828155753,
       "name": "Comfort",
@@ -54,9 +69,11 @@ const ThemesListJSON = `
       "processing": false
     }
   ]
+}
 `
 
 const ThemeJSON = `
+{ "theme":
   {
     "id": 828155753,
     "name": "Comfort",
@@ -67,4 +84,5 @@ const ThemeJSON = `
     "previewable": true,
     "processing": false
   }
+}
 `
