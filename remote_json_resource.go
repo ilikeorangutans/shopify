@@ -24,7 +24,7 @@ type httpRemoteResource struct {
 
 func (rr *httpRemoteResource) Request(req *http.Request) (io.ReadCloser, error) {
 	if rr.settings.DumpRequestURLs {
-		log.Printf("%s %s\n", req.Method, req.RequestURI)
+		log.Printf("%s %s\n", req.Method, req.URL.String())
 	}
 	rr.authenticateRequest(req)
 	req.Header.Set("Accept", "application/json")
