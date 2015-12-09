@@ -51,9 +51,9 @@ func TestConnectWithTimeout(t *testing.T) {
 		time.Sleep(time.Duration(100 * time.Millisecond))
 	}))
 	defer ts.Close()
-	settings := ClientSettings{host: ts.URL, username: "", password: "", timeout: time.Duration(100 * time.Millisecond)}
+	settings := ClientSettings{Host: ts.URL, Username: "", Password: "", Timeout: time.Duration(100 * time.Millisecond)}
 	client := NewClientWithSettings(settings)
-	client.Settings.timeout = time.Duration(1 * time.Millisecond)
+	client.Settings.Timeout = time.Duration(1 * time.Millisecond)
 
 	err := client.Connect()
 

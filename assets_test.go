@@ -86,7 +86,7 @@ func TestAssetsUpload(t *testing.T) {
 		RemoteJSONResource: &ShopifyRemoteJSONResource{
 			URLBuilder: &ShopifyAdminURLBuilder{},
 			RemoteResource: &TestRemoteResource{
-				expectedBody: "{\"key\":\"templates/foobar.liquid\",\"value\":\"i am the template value!\"}",
+				expectedBody: "{\"asset\":{\"key\":\"templates/foobar.liquid\",\"value\":\"i am the template value!\"}}",
 				body:         []byte(SingleAssetWithBase64Attachment),
 				t:            t,
 			},
