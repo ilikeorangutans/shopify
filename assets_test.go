@@ -81,6 +81,23 @@ func TestAssetsDownload(t *testing.T) {
 	assert.Equal(t, 950, a.Size)
 }
 
+func TestAssetsUpload(t *testing.T) {
+	assets := &Assets{
+		RemoteJSONResource: &ShopifyRemoteJSONResource{
+			URLBuilder: &ShopifyAdminURLBuilder{},
+			RemoteResource: &TestRemoteResource{
+				expectedBody: "{\"key\":\"templates/foobar.liquid\",\"value\":\"i am the template value!\"}",
+				body:         []byte(SingleAssetWithBase64Attachment),
+				t:            t,
+			},
+		},
+		Theme: testTheme,
+	}
+
+	asset, _ := NewAssetWithValue("templates/foobar.liquid", "i am the template value!")
+	assets.Upload(asset)
+}
+
 const AssetListJSON = `
 { "assets":[
     {

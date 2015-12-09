@@ -16,9 +16,25 @@ type TestRemoteResource struct {
 	// body is the response body.
 	body       []byte
 	bodyReader io.ReadCloser
+
+	expectedURI  string
+	expectedBody string
+	t            *testing.T
 }
 
 func (tr *TestRemoteResource) Request(req *http.Request) (io.ReadCloser, error) {
+	if len(tr.expectedURI) > 0 {
+		assert.Equal(tr.t, tr.expectedURI, req.RequestURI)
+	}
+
+	if len(tr.expectedBody) > 0 {
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			tr.t.Error(err)
+		}
+		assert.Equal(tr.t, tr.expectedBody, string(body))
+	}
+
 	if tr.err != nil {
 		return nil, tr.err
 	}
