@@ -9,6 +9,12 @@ type Timestamps struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
+type ShopifyID int64
+
+type Identifiable interface {
+	ID() ShopifyID
+}
+
 type CommonFields struct {
 	ID     int64 `json:"id"`
 	ShopID int64 `json:"shop_id"`
