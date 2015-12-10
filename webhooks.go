@@ -37,7 +37,7 @@ func (webhooks *Webhooks) Create(topic string, address *url.URL, format string) 
 	return webhook, nil
 }
 
-func (webhooks *Webhooks) Delete(id int64) {
+func (webhooks *Webhooks) Delete(id ShopifyID) {
 	webhook, err := webhooks.Get(id)
 	if err != nil {
 		log.Fatal(err)
@@ -74,7 +74,7 @@ func (ws *Webhooks) List() ([]*Webhook, error) {
 	return webhooks, nil
 }
 
-func (ws *Webhooks) Get(id int64) (*Webhook, error) {
+func (ws *Webhooks) Get(id ShopifyID) (*Webhook, error) {
 	req, err := http.NewRequest("GET", ws.BuildURL(fmt.Sprintf("webhooks/%d", id)), nil)
 	if err != nil {
 		return nil, err

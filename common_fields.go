@@ -1,6 +1,7 @@
 package shopify
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -11,12 +12,16 @@ type Timestamps struct {
 
 type ShopifyID int64
 
+func (id ShopifyID) String() string {
+	return fmt.Sprintf("%d", id)
+}
+
 type Identifiable interface {
 	ID() ShopifyID
 }
 
 type CommonFields struct {
-	ID     int64 `json:"id"`
-	ShopID int64 `json:"shop_id"`
+	ID     ShopifyID `json:"id"`
+	ShopID int64     `json:"shop_id"`
 	Timestamps
 }

@@ -10,55 +10,24 @@ type Products struct {
 
 type Product struct {
 	CommonFields
+	Title    string     `json:"title"`
+	Handle   string     `json:"handle"`
+	Variants []*Variant `json:"variants"`
+}
+
+type Variant struct {
+	CommonFields
 	Title string `json:"title"`
 }
-type ProductList []*Product
 
-func (pl ProductList) Size() int {
-	return len(pl)
-}
-
-func (pl ProductList) LastID() ShopifyID {
-
-	return 0
-}
-
-func trypagination() chan *Product {
-
-	prodChan := make(chan *Product)
-
-	products := &Products{}
-	var prods ProductList
-
-	go func() {
-		defer close(prodChan)
-		pagination := Pagination{}
-		for {
-			prods, _ = products.List(pagination)
-			pagination = pagination.Update(prods)
-
-			for i := range prods {
-				product := prods[i]
-				prodChan <- product
-			}
-
-			if pagination.NoMore {
-				break
-			}
-		}
-	}()
-
-	return prodChan
-}
-
-func (p *Products) List(pagination Pagination) (ProductList, error) {
+func (p *Products) List(paginator Paginator) (ProductList, error) {
 	url := p.BuildURL("products")
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	pagination.Paginate(req)
+	paginator.Paginate(req)
 	var products []*Product
 	err = p.RequestAndDecode(req, "products", &products)
 	if err != nil {
@@ -66,4 +35,30 @@ func (p *Products) List(pagination Pagination) (ProductList, error) {
 	}
 
 	return products, nil
+}
+
+func (p *Products) Get(id ShopifyID) (*Product, error) {
+	req, err := http.NewRequest("GET", p.BuildURL("products", id.String()), nil)
+	if err != nil {
+		return nil, err
+	}
+	var prod *Product
+	if err := p.RequestAndDecode(req, "product", &prod); err != nil {
+		return nil, err
+	}
+	return prod, nil
+}
+
+type ProductList []*Product
+
+func (pl ProductList) Size() int {
+	return len(pl)
+}
+
+func (pl ProductList) LastID() ShopifyID {
+	if pl.Size() == 0 {
+		return 0
+	}
+
+	return pl[len(pl)-1].ID
 }

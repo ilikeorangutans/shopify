@@ -22,9 +22,34 @@ type TestRemoteResource struct {
 	t            *testing.T
 }
 
+func NewTestRemote(t *testing.T) *TestRemoteResource {
+	return &TestRemoteResource{
+		t: t,
+	}
+}
+
+func (tr *TestRemoteResource) ReturnsStatus(status int) *TestRemoteResource {
+	return tr
+}
+
+func (tr *TestRemoteResource) ReturnsBody(body []byte) *TestRemoteResource {
+	tr.body = body
+	return tr
+}
+
+func (tr *TestRemoteResource) ReturnsBodyReader(reader io.ReadCloser) *TestRemoteResource {
+	tr.bodyReader = reader
+	return tr
+}
+
+func (tr *TestRemoteResource) ExpectsURL(u string) *TestRemoteResource {
+	tr.expectedURI = u
+	return tr
+}
+
 func (tr *TestRemoteResource) Request(req *http.Request) (io.ReadCloser, error) {
 	if len(tr.expectedURI) > 0 {
-		assert.Equal(tr.t, tr.expectedURI, req.RequestURI)
+		assert.Equal(tr.t, tr.expectedURI, req.URL.String())
 	}
 
 	if len(tr.expectedBody) > 0 {
