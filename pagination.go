@@ -29,9 +29,8 @@ func (p Paginator) Paginate(req *http.Request) {
 		effectiveLimit = p.Limit
 	}
 	q.Set("limit", strconv.Itoa(effectiveLimit))
-	if p.LastID != 0 {
-		q.Set("since_id", fmt.Sprintf("%d", p.LastID))
-	}
+	// Setting since_id even if it is 0 because it forces ordering by id
+	q.Set("since_id", fmt.Sprintf("%d", p.LastID))
 	req.URL.RawQuery = q.Encode()
 }
 
